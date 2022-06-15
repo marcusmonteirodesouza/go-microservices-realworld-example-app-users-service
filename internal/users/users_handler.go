@@ -1,0 +1,108 @@
+package users
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/rs/zerolog/log"
+)
+
+type UsersHandler struct {
+	UsersService *UsersService
+}
+
+type userResponse struct {
+	User *userResponseUser `json:"user"`
+}
+
+type userResponseUser struct {
+	Email    string  `json:"email"`
+	Token    string  `json:"token"`
+	Username string  `json:"username"`
+	Bio      *string `json:"bio"`
+	Image    *string `json:"image"`
+}
+
+func (h *UsersHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		methodNotAllowed(w, r)
+		return
+	}
+
+	var request struct {
+		User struct {
+			Username string `json:"username"`
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		} `json:"user"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		unprocessableEntity(w, r, []error{err})
+	}
+
+	user, err := h.UsersService.RegisterUser(request.User.Username, request.User.Email, request.User.Password)
+	if err != nil {
+		internalServerError(w, r, err)
+	}
+
+	responseBody := &userResponse{
+		User: &userResponseUser{
+			Email:    user.Email,
+			Token:    "",
+			Username: user.Username,
+			Bio:      user.Bio,
+			Image:    user.Image,
+		},
+	}
+
+	response, err := json.Marshal(responseBody)
+	if err != nil {
+		internalServerError(w, r, err)
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write(response)
+}
+
+type errorResponse struct {
+	Errors *errorResponseErrors `json:"errors"`
+}
+
+type errorResponseErrors struct {
+	Body []string `json:"body"`
+}
+
+func toErrorResponse(errors []error) errorResponse {
+	var body []string
+	for _, err := range errors {
+		body = append(body, err.Error())
+	}
+
+	return errorResponse{
+		Errors: &errorResponseErrors{
+			Body: body,
+		},
+	}
+}
+
+func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusMethodNotAllowed)
+}
+
+func unprocessableEntity(w http.ResponseWriter, r *http.Request, errors []error) {
+	response, err := json.Marshal(toErrorResponse(errors))
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(http.StatusUnprocessableEntity)
+	w.Write(response)
+}
+
+func internalServerError(w http.ResponseWriter, r *http.Request, err error) {
+	log.Error().Err(err).Msg("")
+	w.WriteHeader(http.StatusInternalServerError)
+}
