@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/errors"
 	"github.com/rs/zerolog/log"
 )
 
@@ -40,11 +41,18 @@ func (h *UsersHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		unprocessableEntity(w, r, []error{err})
+		return
 	}
 
 	user, err := h.UsersService.RegisterUser(request.User.Username, request.User.Email, request.User.Password)
 	if err != nil {
+		if _, ok := err.(*errors.InvalidArgumentError); ok {
+			unprocessableEntity(w, r, []error{err})
+			return
+		}
+
 		internalServerError(w, r, err)
+		return
 	}
 
 	responseBody := &userResponse{
@@ -60,9 +68,11 @@ func (h *UsersHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	response, err := json.Marshal(responseBody)
 	if err != nil {
 		internalServerError(w, r, err)
+		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("content-type", "application/json")
 	w.Write(response)
 }
 
