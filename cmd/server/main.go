@@ -23,12 +23,12 @@ func main() {
 		Validate: validator.InitValidator(),
 	}
 
-	usersHandler := &users.UsersHandler{
+	usersHandlers := &users.UsersHandlers{
 		UsersService: usersService,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/users", usersHandler.RegisterUser)
+	mux.HandleFunc("/users", usersHandlers.RegisterUser)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.port),

@@ -8,7 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type UsersHandler struct {
+type UsersHandlers struct {
 	UsersService *UsersService
 }
 
@@ -24,7 +24,7 @@ type userResponseUser struct {
 	Image    *string `json:"image"`
 }
 
-func (h *UsersHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		methodNotAllowed(w, r)
 		return
@@ -71,8 +71,8 @@ func (h *UsersHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(response)
 }
 
