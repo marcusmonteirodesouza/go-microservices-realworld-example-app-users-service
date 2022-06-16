@@ -1,16 +1,23 @@
 package users
 
 import (
+	"context"
+	"fmt"
 	"strings"
 
+	"cloud.google.com/go/firestore"
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type UsersService struct {
-	Validate *validator.Validate
+	Validate  *validator.Validate
+	Firestore *firestore.Client
 }
+
+const usersCollection = "users"
 
 func (s *UsersService) RegisterUser(username string, email string, password string) (*User, error) {
 	if len(strings.TrimSpace(username)) == 0 {
@@ -26,11 +33,33 @@ func (s *UsersService) RegisterUser(username string, email string, password stri
 		return nil, &errors.InvalidArgumentError{Message: "password must contain at least 8 characters"}
 	}
 
-	return &User{
-		Id:       uuid.New(),
-		Username: username,
-		Email:    email,
-		Bio:      nil,
-		Image:    nil,
-	}, nil
+	ctx := context.Background()
+	userDocPath := fmt.Sprintf("%s/%s", usersCollection, username)
+	userDocRef := s.Firestore.Doc(userDocPath)
+	_, err = userDocRef.Get(ctx)
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			return nil, err
+		}
+	} else {
+		return nil, &errors.AlreadyExistsError{Message: "User already exists"}
+	}
+
+	// TODO(hash password)
+	passwordHash := password
+
+	user := &User{
+		Username:     username,
+		Email:        email,
+		PasswordHash: passwordHash,
+		Bio:          nil,
+		Image:        nil,
+	}
+
+	_, err = userDocRef.Create(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
