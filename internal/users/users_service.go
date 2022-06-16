@@ -8,6 +8,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/go-playground/validator/v10"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/errors"
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -18,6 +19,13 @@ type UsersService struct {
 }
 
 const usersCollection = "users"
+
+type userDocData struct {
+	email         string
+	password_hash string
+	bio           string
+	image         string
+}
 
 func (s *UsersService) RegisterUser(username string, email string, password string) (*User, error) {
 	if len(strings.TrimSpace(username)) == 0 {
@@ -45,18 +53,20 @@ func (s *UsersService) RegisterUser(username string, email string, password stri
 		return nil, &errors.AlreadyExistsError{Message: "User already exists"}
 	}
 
-	// TODO(hash password)
-	passwordHash := password
-
 	user := &User{
-		Username:     username,
-		Email:        email,
-		PasswordHash: passwordHash,
-		Bio:          nil,
-		Image:        nil,
+		Username: username,
+		Email:    email,
 	}
 
-	_, err = userDocRef.Create(ctx, user)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = userDocRef.Create(ctx, &userDocData{
+		email:         user.Email,
+		password_hash: string(passwordHash),
+	})
 	if err != nil {
 		return nil, err
 	}

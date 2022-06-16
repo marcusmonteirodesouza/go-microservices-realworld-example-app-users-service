@@ -51,6 +51,11 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if _, ok := err.(*errors.AlreadyExistsError); ok {
+			unprocessableEntity(w, r, []error{err})
+			return
+		}
+
 		internalServerError(w, r, err)
 		return
 	}
