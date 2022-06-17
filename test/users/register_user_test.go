@@ -170,3 +170,100 @@ func TestGivenNoUsernameShouldReturnUnprocessableEntity(t *testing.T) {
 		t.Errorf("got %s, want %s", responseData.Errors.Body[0], "Username cannot be blank")
 	}
 }
+
+func TestGivenInvalidEmailShouldReturnUnprocessableEntity(t *testing.T) {
+	requestData := &RegisterUserRequest{}
+	err := faker.FakeData(&requestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requestData.User.Email = "invalid"
+
+	response, err := RegisterUser(requestData.User.Username, requestData.User.Email, requestData.User.Password)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
+	}
+
+	responseData := &ErrorResponse{}
+	err = json.NewDecoder(response.Body).Decode(&responseData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if responseData.Errors.Body[0] != "Invalid email" {
+		t.Errorf("got %s, want %s", responseData.Errors.Body[0], "Invalid email")
+	}
+}
+
+func TestGivenPasswordContainsLessThanEightCharactersShouldReturnUnprocessableEntity(t *testing.T) {
+	requestData := &RegisterUserRequest{}
+	err := faker.FakeData(&requestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requestData.User.Password = "1234567"
+
+	response, err := RegisterUser(requestData.User.Username, requestData.User.Email, requestData.User.Password)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
+	}
+
+	responseData := &ErrorResponse{}
+	err = json.NewDecoder(response.Body).Decode(&responseData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if responseData.Errors.Body[0] != "Password must contain at least 8 characters" {
+		t.Errorf("got %s, want %s", responseData.Errors.Body[0], "Password must contain at least 8 characters")
+	}
+}
+
+func TestGivenUsernameAlreadyExistsShouldReturnUnprocessableEntity(t *testing.T) {
+	requestData := &RegisterUserRequest{}
+	err := faker.FakeData(&requestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response, err := RegisterUser(requestData.User.Username, requestData.User.Email, requestData.User.Password)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	anotherRequestData := &RegisterUserRequest{}
+	err = faker.FakeData(&anotherRequestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response, err = RegisterUser(requestData.User.Username, anotherRequestData.User.Email, anotherRequestData.User.Password)
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
+	}
+
+	responseData := &ErrorResponse{}
+	err = json.NewDecoder(response.Body).Decode(&responseData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if responseData.Errors.Body[0] != "User already exists" {
+		t.Errorf("got %s, want %s", responseData.Errors.Body[0], "User already exists")
+	}
+}
