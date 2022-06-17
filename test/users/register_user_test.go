@@ -14,15 +14,16 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-const apiUrl = "http://localhost:8080/users"
 const contentType = "application/json"
 
 type RegisterUserRequest struct {
-	User struct {
-		Username string `json:"username" faker:"username"`
-		Email    string `json:"email" faker:"email"`
-		Password string `json:"password" faker:"password"`
-	} `json:"user"`
+	User registerUserResponseUser `json:"user"`
+}
+
+type registerUserResponseUser struct {
+	Username string `json:"username" faker:"username"`
+	Email    string `json:"email" faker:"email"`
+	Password string `json:"password" faker:"password"`
 }
 
 type RegisterUserResponse struct {
@@ -35,20 +36,48 @@ type RegisterUserResponse struct {
 	} `json:"user"`
 }
 
+type ErrorResponse struct {
+	Errors *ErrorResponseErrors `json:"errors"`
+}
+
+type ErrorResponseErrors struct {
+	Body []string `json:"body"`
+}
+
+func RegisterUser(username string, email string, password string) (*http.Response, error) {
+	const url = "http://localhost:8080/users"
+
+	requestData := &RegisterUserRequest{
+		User: registerUserResponseUser{
+			Username: username,
+			Email:    email,
+			Password: password,
+		},
+	}
+
+	requestBody, err := json.Marshal(requestData)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := http.Post(url, contentType, bytes.NewBuffer(requestBody))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
 func TestGivenValidRequestShouldReturnUser(t *testing.T) {
 	requestData := &RegisterUserRequest{}
+
 	err := faker.FakeData(&requestData)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	requestBody, err := json.Marshal(requestData)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	response, err := http.Post(apiUrl, contentType, bytes.NewBuffer(requestBody))
-
+	response, err := RegisterUser(requestData.User.Username, requestData.User.Email, requestData.User.Password)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,5 +138,35 @@ func TestGivenValidRequestShouldReturnUser(t *testing.T) {
 
 	if claims.IssuedAt+int64(jwtSecondsToExpire) != claims.ExpiresAt {
 		t.Errorf("got %d, want %d", claims.ExpiresAt, claims.IssuedAt+int64(jwtSecondsToExpire))
+	}
+}
+
+func TestGivenNoUsernameShouldReturnUnprocessableEntity(t *testing.T) {
+	requestData := &RegisterUserRequest{}
+	err := faker.FakeData(&requestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requestData.User.Username = " "
+
+	response, err := RegisterUser(requestData.User.Username, requestData.User.Email, requestData.User.Password)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
+	}
+
+	responseData := &ErrorResponse{}
+	err = json.NewDecoder(response.Body).Decode(&responseData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if responseData.Errors.Body[0] != "Username cannot be blank" {
+		t.Errorf("got %s, want %s", responseData.Errors.Body[0], "Username cannot be blank")
 	}
 }

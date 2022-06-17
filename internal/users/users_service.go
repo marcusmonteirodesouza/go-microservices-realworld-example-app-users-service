@@ -29,7 +29,7 @@ type userDocData struct {
 
 func (s *UsersService) RegisterUser(username string, email string, password string) (*User, error) {
 	if len(strings.TrimSpace(username)) == 0 {
-		return nil, &errors.InvalidArgumentError{Message: "username cannot be blank"}
+		return nil, &errors.InvalidArgumentError{Message: "Username cannot be blank"}
 	}
 
 	err := s.Validate.Var(email, "email")
@@ -38,7 +38,7 @@ func (s *UsersService) RegisterUser(username string, email string, password stri
 	}
 
 	if len(password) < 8 {
-		return nil, &errors.InvalidArgumentError{Message: "password must contain at least 8 characters"}
+		return nil, &errors.InvalidArgumentError{Message: "Password must contain at least 8 characters"}
 	}
 
 	ctx := context.Background()

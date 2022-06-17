@@ -5,7 +5,9 @@ services:
     ports:
       - "${PORT}:${PORT}"
     depends_on:
-      - firestore_emulator
+      firestore_emulator: 
+        condition: 
+          service_healthy
     environment:
       - FIRESTORE_PROJECT_ID=${FIRESTORE_PROJECT_ID}
       - FIRESTORE_PORT=$FIRESTORE_PORT
@@ -20,3 +22,9 @@ services:
       - PORT=${FIRESTORE_PORT}
     ports:
       - "${FIRESTORE_PORT}:${FIRESTORE_PORT}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8200"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
