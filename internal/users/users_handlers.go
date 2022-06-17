@@ -10,6 +10,7 @@ import (
 
 type UsersHandlers struct {
 	UsersService *UsersService
+	JwtService   *JwtService
 }
 
 type userResponse struct {
@@ -60,10 +61,16 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := h.JwtService.GenerateJwtToken(*user)
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+
 	responseBody := &userResponse{
 		User: &userResponseUser{
 			Email:    user.Email,
-			Token:    "",
+			Token:    *token,
 			Username: user.Username,
 			Bio:      user.Bio,
 			Image:    user.Image,

@@ -34,8 +34,24 @@ func main() {
 		Firestore: firestoreClient,
 	}
 
+	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
+	if len(jwtSecretKey) == 0 {
+		log.Fatal().Err(err).Msg("Environment variable 'JWT_SECRET_KEY' must be set and not be empty")
+	}
+
+	jwtSecondsToExpire, err := strconv.Atoi(os.Getenv("JWT_SECONDS_TO_EXPIRE"))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Environment variable 'JWT_SECONDS_TO_EXPIRE' must be set and not be empty")
+	}
+
+	jwtService := &users.JwtService{
+		SecretKey:       jwtSecretKey,
+		SecondsToExpire: jwtSecondsToExpire,
+	}
+
 	usersHandlers := &users.UsersHandlers{
 		UsersService: usersService,
+		JwtService:   jwtService,
 	}
 
 	mux := http.NewServeMux()

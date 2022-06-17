@@ -11,6 +11,8 @@ services:
       - FIRESTORE_PORT=$FIRESTORE_PORT
       - FIRESTORE_EMULATOR_HOST=${FIRESTORE_EMULATOR_HOST}
       - PORT=${PORT}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_SECONDS_TO_EXPIRE=${JWT_SECONDS_TO_EXPIRE}
   firestore_emulator:
     image: mtlynch/firestore-emulator
     environment:

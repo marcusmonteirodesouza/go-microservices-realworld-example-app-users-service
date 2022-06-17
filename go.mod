@@ -5,6 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/firestore v1.6.1
 	github.com/go-playground/validator/v10 v10.11.0
+	github.com/golang-jwt/jwt/v4 v4.4.1
 	github.com/joho/godotenv v1.4.0
 	github.com/rs/zerolog v1.27.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
