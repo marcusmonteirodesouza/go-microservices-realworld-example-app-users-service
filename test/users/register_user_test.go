@@ -85,7 +85,7 @@ func TestGivenValidRequestShouldReturnUser(t *testing.T) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusCreated {
-		t.Errorf("got %d, want %d", response.StatusCode, http.StatusCreated)
+		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusCreated)
 	}
 
 	responseData := &RegisterUserResponse{}
@@ -95,11 +95,11 @@ func TestGivenValidRequestShouldReturnUser(t *testing.T) {
 	}
 
 	if responseData.User.Username != requestData.User.Username {
-		t.Errorf("got %s, want %s", responseData.User.Username, requestData.User.Username)
+		t.Fatalf("got %s, want %s", responseData.User.Username, requestData.User.Username)
 	}
 
 	if responseData.User.Email != requestData.User.Email {
-		t.Errorf("got %s, want %s", responseData.User.Email, requestData.User.Email)
+		t.Fatalf("got %s, want %s", responseData.User.Email, requestData.User.Email)
 	}
 
 	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
@@ -124,20 +124,20 @@ func TestGivenValidRequestShouldReturnUser(t *testing.T) {
 	claims := parsedToken.Claims.(*jwt.StandardClaims)
 
 	if claims.Subject != responseData.User.Username {
-		t.Errorf("got %s, want %s", claims.Subject, requestData.User.Username)
+		t.Fatalf("got %s, want %s", claims.Subject, requestData.User.Username)
 	}
 
 	now := time.Now().Unix()
 	if claims.ExpiresAt <= now {
-		t.Errorf("ExpiresAt claim must be greater than now. got %d, now %d", claims.ExpiresAt, now)
+		t.Fatalf("ExpiresAt claim must be greater than now. got %d, now %d", claims.ExpiresAt, now)
 	}
 
 	if claims.IssuedAt-now > 60 {
-		t.Errorf("IssuedAt claim must be close to now. got %d, now %d", claims.IssuedAt, now)
+		t.Fatalf("IssuedAt claim must be close to now. got %d, now %d", claims.IssuedAt, now)
 	}
 
 	if claims.IssuedAt+int64(jwtSecondsToExpire) != claims.ExpiresAt {
-		t.Errorf("got %d, want %d", claims.ExpiresAt, claims.IssuedAt+int64(jwtSecondsToExpire))
+		t.Fatalf("got %d, want %d", claims.ExpiresAt, claims.IssuedAt+int64(jwtSecondsToExpire))
 	}
 }
 
@@ -157,7 +157,7 @@ func TestGivenNoUsernameShouldReturnUnprocessableEntity(t *testing.T) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusUnprocessableEntity {
-		t.Errorf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
+		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
 	}
 
 	responseData := &ErrorResponse{}
@@ -167,7 +167,7 @@ func TestGivenNoUsernameShouldReturnUnprocessableEntity(t *testing.T) {
 	}
 
 	if responseData.Errors.Body[0] != "Username cannot be blank" {
-		t.Errorf("got %s, want %s", responseData.Errors.Body[0], "Username cannot be blank")
+		t.Fatalf("got %s, want %s", responseData.Errors.Body[0], "Username cannot be blank")
 	}
 }
 
@@ -187,7 +187,7 @@ func TestGivenInvalidEmailShouldReturnUnprocessableEntity(t *testing.T) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusUnprocessableEntity {
-		t.Errorf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
+		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
 	}
 
 	responseData := &ErrorResponse{}
@@ -197,7 +197,7 @@ func TestGivenInvalidEmailShouldReturnUnprocessableEntity(t *testing.T) {
 	}
 
 	if responseData.Errors.Body[0] != "Invalid email" {
-		t.Errorf("got %s, want %s", responseData.Errors.Body[0], "Invalid email")
+		t.Fatalf("got %s, want %s", responseData.Errors.Body[0], "Invalid email")
 	}
 }
 
@@ -217,7 +217,7 @@ func TestGivenPasswordContainsLessThanEightCharactersShouldReturnUnprocessableEn
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusUnprocessableEntity {
-		t.Errorf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
+		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
 	}
 
 	responseData := &ErrorResponse{}
@@ -227,34 +227,34 @@ func TestGivenPasswordContainsLessThanEightCharactersShouldReturnUnprocessableEn
 	}
 
 	if responseData.Errors.Body[0] != "Password must contain at least 8 characters" {
-		t.Errorf("got %s, want %s", responseData.Errors.Body[0], "Password must contain at least 8 characters")
+		t.Fatalf("got %s, want %s", responseData.Errors.Body[0], "Password must contain at least 8 characters")
 	}
 }
 
 func TestGivenUsernameAlreadyExistsShouldReturnUnprocessableEntity(t *testing.T) {
-	requestData := &RegisterUserRequest{}
-	err := faker.FakeData(&requestData)
+	existingUserRequestData := &RegisterUserRequest{}
+	err := faker.FakeData(&existingUserRequestData)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	response, err := RegisterUser(requestData.User.Username, requestData.User.Email, requestData.User.Password)
+	response, err := RegisterUser(existingUserRequestData.User.Username, existingUserRequestData.User.Email, existingUserRequestData.User.Password)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	anotherRequestData := &RegisterUserRequest{}
-	err = faker.FakeData(&anotherRequestData)
+	anotherUserRequestData := &RegisterUserRequest{}
+	err = faker.FakeData(&anotherUserRequestData)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	response, err = RegisterUser(requestData.User.Username, anotherRequestData.User.Email, anotherRequestData.User.Password)
+	response, err = RegisterUser(existingUserRequestData.User.Username, anotherUserRequestData.User.Email, anotherUserRequestData.User.Password)
 
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusUnprocessableEntity {
-		t.Errorf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
+		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
 	}
 
 	responseData := &ErrorResponse{}
@@ -264,6 +264,43 @@ func TestGivenUsernameAlreadyExistsShouldReturnUnprocessableEntity(t *testing.T)
 	}
 
 	if responseData.Errors.Body[0] != "User already exists" {
-		t.Errorf("got %s, want %s", responseData.Errors.Body[0], "User already exists")
+		t.Fatalf("got %s, want %s", responseData.Errors.Body[0], "User already exists")
+	}
+}
+
+func TestGivenEmailIsTakenShouldReturnUnprocessableEntity(t *testing.T) {
+	existingUserRequestData := &RegisterUserRequest{}
+	err := faker.FakeData(&existingUserRequestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response, err := RegisterUser(existingUserRequestData.User.Username, existingUserRequestData.User.Email, existingUserRequestData.User.Password)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	anotherUserRequestData := &RegisterUserRequest{}
+	err = faker.FakeData(&anotherUserRequestData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response, err = RegisterUser(anotherUserRequestData.User.Username, existingUserRequestData.User.Email, anotherUserRequestData.User.Password)
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
+	}
+
+	responseData := &ErrorResponse{}
+	err = json.NewDecoder(response.Body).Decode(&responseData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if responseData.Errors.Body[0] != "Email is taken" {
+		t.Fatalf("got %s, want %s", responseData.Errors.Body[0], "Email is taken")
 	}
 }

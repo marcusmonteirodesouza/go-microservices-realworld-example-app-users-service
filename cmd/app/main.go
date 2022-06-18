@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -24,10 +25,14 @@ func main() {
 		log.Fatal().Err(err).Msg("Environment variable 'FIRESTORE_PROJECT_ID' must be set and not be empty")
 	}
 
-	firestoreClient, err := firestore.InitFirestore(firestoreProjectId)
+	ctx := context.Background()
+
+	firestoreClient, err := firestore.InitFirestore(ctx, firestoreProjectId)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing the Firestore client")
 	}
+
+	defer firestoreClient.Close()
 
 	usersService := &users.UsersService{
 		Validate:  validator.InitValidator(),

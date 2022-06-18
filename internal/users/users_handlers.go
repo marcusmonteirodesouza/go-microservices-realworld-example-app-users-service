@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -45,7 +46,9 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.UsersService.RegisterUser(request.User.Username, request.User.Email, request.User.Password)
+	ctx := context.Background()
+
+	user, err := h.UsersService.RegisterUser(ctx, request.User.Username, request.User.Email, request.User.Password)
 	if err != nil {
 		if _, ok := err.(*errors.InvalidArgumentError); ok {
 			unprocessableEntity(w, r, []error{err})
@@ -67,7 +70,7 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseBody := &userResponse{
+	responseBody := userResponse{
 		User: &userResponseUser{
 			Email:    user.Email,
 			Token:    *token,
