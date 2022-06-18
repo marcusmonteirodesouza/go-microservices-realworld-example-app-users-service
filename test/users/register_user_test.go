@@ -1,7 +1,6 @@
 package users
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -14,62 +13,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-const contentType = "application/json"
-
-type RegisterUserRequest struct {
-	User registerUserResponseUser `json:"user"`
-}
-
-type registerUserResponseUser struct {
-	Username string `json:"username" faker:"username"`
-	Email    string `json:"email" faker:"email"`
-	Password string `json:"password" faker:"password"`
-}
-
-type RegisterUserResponse struct {
-	User struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Token    string `json:"token"`
-		Bio      string `json:"bio"`
-		Image    string `json:"image"`
-	} `json:"user"`
-}
-
-type ErrorResponse struct {
-	Errors *ErrorResponseErrors `json:"errors"`
-}
-
-type ErrorResponseErrors struct {
-	Body []string `json:"body"`
-}
-
-func RegisterUser(username string, email string, password string) (*http.Response, error) {
-	const url = "http://localhost:8080/users"
-
-	requestData := &RegisterUserRequest{
-		User: registerUserResponseUser{
-			Username: username,
-			Email:    email,
-			Password: password,
-		},
-	}
-
-	requestBody, err := json.Marshal(requestData)
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := http.Post(url, contentType, bytes.NewBuffer(requestBody))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
-}
-
-func TestGivenValidRequestShouldReturnUser(t *testing.T) {
+func TestGivenValidRequestWhenRegisterUserShouldReturnUser(t *testing.T) {
 	requestData := &RegisterUserRequest{}
 
 	err := faker.FakeData(&requestData)
@@ -88,7 +32,7 @@ func TestGivenValidRequestShouldReturnUser(t *testing.T) {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusCreated)
 	}
 
-	responseData := &RegisterUserResponse{}
+	responseData := &UserResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)
 	if err != nil {
 		t.Fatal(err)
