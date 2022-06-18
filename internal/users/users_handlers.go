@@ -91,6 +91,66 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		methodNotAllowed(w, r)
+		return
+	}
+
+	var request struct {
+		User struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		} `json:"user"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		unprocessableEntity(w, r, []error{err})
+		return
+	}
+
+	ctx := context.Background()
+
+	isValidPassword, err := h.UsersService.IsValidPassword(ctx, request.User.Email, request.User.Password)
+	if err != nil || !isValidPassword {
+		unauthorized(w, r)
+		return
+	}
+
+	user, err := h.UsersService.GetUserByEmail(ctx, request.User.Email)
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+
+	token, err := h.JwtService.GenerateJwtToken(*user)
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+
+	responseBody := userResponse{
+		User: &userResponseUser{
+			Email:    user.Email,
+			Token:    *token,
+			Username: user.Username,
+			Bio:      user.Bio,
+			Image:    user.Image,
+		},
+	}
+
+	response, err := json.Marshal(responseBody)
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(response)
+}
+
 type errorResponse struct {
 	Errors *errorResponseErrors `json:"errors"`
 }
@@ -125,6 +185,10 @@ func unprocessableEntity(w http.ResponseWriter, r *http.Request, errors []error)
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusUnprocessableEntity)
 	w.Write(response)
+}
+
+func unauthorized(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusUnauthorized)
 }
 
 func internalServerError(w http.ResponseWriter, r *http.Request, err error) {
