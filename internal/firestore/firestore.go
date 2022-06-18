@@ -6,8 +6,7 @@ import (
 	"cloud.google.com/go/firestore"
 )
 
-func InitFirestore(projectId string) (*firestore.Client, error) {
-	ctx := context.Background()
+func InitFirestore(ctx context.Context, projectId string) (*firestore.Client, error) {
 	client, err := firestore.NewClient(ctx, projectId)
 	if err != nil {
 		return nil, err
