@@ -61,6 +61,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users", usersHandlers.RegisterUser)
+	mux.HandleFunc("/users/login", usersHandlers.Login)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),

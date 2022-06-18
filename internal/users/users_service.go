@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"cloud.google.com/go/firestore"
@@ -41,8 +42,7 @@ func (s *UsersService) RegisterUser(ctx context.Context, username string, email 
 		return nil, &errors.InvalidArgumentError{Message: "Password must contain at least 8 characters"}
 	}
 
-	usersCollection := s.Firestore.Collection(usersCollectionName)
-	userDocRef := usersCollection.Doc(username)
+	userDocRef := s.Firestore.Doc(fmt.Sprintf("%s/%s", usersCollectionName, username))
 	_, err = userDocRef.Get(ctx)
 	if err != nil {
 		if status.Code(err) != codes.NotFound {
@@ -52,7 +52,7 @@ func (s *UsersService) RegisterUser(ctx context.Context, username string, email 
 		return nil, &errors.AlreadyExistsError{Message: "User already exists"}
 	}
 
-	existingUser, err := s.getUserByEmail(ctx, email)
+	existingUser, err := s.GetUserByEmail(ctx, email)
 	if err != nil {
 		if _, ok := err.(*errors.NotFoundError); !ok {
 			return nil, err
@@ -62,29 +62,32 @@ func (s *UsersService) RegisterUser(ctx context.Context, username string, email 
 		return nil, &errors.AlreadyExistsError{Message: "Email is taken"}
 	}
 
-	user := User{
-		Username: username,
-		Email:    email,
-	}
-
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = userDocRef.Create(ctx, userDocData{
-		Email:        user.Email,
+	userData := userDocData{
+		Email:        email,
 		PasswordHash: string(passwordHash),
-	})
+	}
+
+	_, err = userDocRef.Create(ctx, userData)
 
 	if err != nil {
 		return nil, err
 	}
 
+	user := User{
+		Username:     username,
+		Email:        userData.Email,
+		PasswordHash: userData.PasswordHash,
+	}
+
 	return &user, nil
 }
 
-func (s *UsersService) getUserByEmail(ctx context.Context, email string) (*User, error) {
+func (s *UsersService) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	usersCollection := s.Firestore.Collection(usersCollectionName)
 	query := usersCollection.Where("email", "==", email).Limit(1)
 	docs := query.Documents(ctx)
@@ -104,10 +107,28 @@ func (s *UsersService) getUserByEmail(ctx context.Context, email string) (*User,
 		}
 
 		return &User{
-			Username: doc.Ref.ID,
-			Email:    userData.Email,
-			Bio:      &userData.Bio,
-			Image:    &userData.Image,
+			Username:     doc.Ref.ID,
+			Email:        userData.Email,
+			PasswordHash: userData.PasswordHash,
+			Bio:          &userData.Bio,
+			Image:        &userData.Image,
 		}, nil
 	}
+}
+
+func (s *UsersService) IsValidPassword(ctx context.Context, email string, password string) (bool, error) {
+	user, err := s.GetUserByEmail(ctx, email)
+	if err != nil {
+		return false, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }
