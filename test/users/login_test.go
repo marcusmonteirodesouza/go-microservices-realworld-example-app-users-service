@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -56,7 +57,7 @@ func TestGivenValidRequestWhenLoginShouldReturnUser(t *testing.T) {
 		t.Fatal("Environment variable 'JWT_SECONDS_TO_EXPIRE' must be set and not be empty")
 	}
 
-	parsedToken, err := jwt.ParseWithClaims(loggedUser.User.Token, jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.ParseWithClaims(loggedUser.User.Token, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		b := ([]byte(jwtSecretKey))
 		return b, nil
 	})
@@ -120,7 +121,7 @@ func TestGivenEmailNotFoundShouldReturnUnauthorized(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bodyString := string(bodyBytes)
+	bodyString := strings.TrimSpace(string(bodyBytes))
 	if bodyString != "Unauthorized" {
 		t.Fatalf("got %s, want %s", bodyString, "Unauthorized")
 	}
@@ -161,7 +162,7 @@ func TestGivenPasswordIsIncorrectShouldReturnUnauthorized(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bodyString := string(bodyBytes)
+	bodyString := strings.TrimSpace(string(bodyBytes))
 	if bodyString != "Unauthorized" {
 		t.Fatalf("got %s, want %s", bodyString, "Unauthorized")
 	}

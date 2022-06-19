@@ -130,7 +130,47 @@ func LoginAndDecode(email string, password string) (*UserResponse, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusCreated))
+		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusOK))
+	}
+
+	defer response.Body.Close()
+
+	responseData := &UserResponse{}
+	err = json.NewDecoder(response.Body).Decode(&responseData)
+	if err != nil {
+		return nil, err
+	}
+
+	return responseData, nil
+}
+
+func GetUser(tokenString string) (*http.Response, error) {
+	client := &http.Client{}
+	const url = "http://localhost:8080/user"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", tokenString))
+
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func GetUserAndDecode(tokenString string) (*UserResponse, error) {
+	response, err := GetUser(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusOK))
 	}
 
 	defer response.Body.Close()

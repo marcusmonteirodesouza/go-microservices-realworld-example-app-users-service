@@ -56,7 +56,7 @@ func TestGivenValidRequestWhenRegisterUserShouldReturnUser(t *testing.T) {
 		t.Fatal("Environment variable 'JWT_SECONDS_TO_EXPIRE' must be set and not be empty")
 	}
 
-	parsedToken, err := jwt.ParseWithClaims(responseData.User.Token, jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.ParseWithClaims(responseData.User.Token, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		b := ([]byte(jwtSecretKey))
 		return b, nil
 	})
