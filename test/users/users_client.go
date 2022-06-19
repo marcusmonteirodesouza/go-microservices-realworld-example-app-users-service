@@ -9,13 +9,41 @@ import (
 )
 
 type RegisterUserRequest struct {
-	User registerUserResponseUser `json:"user"`
+	User registerUserRequestUser `json:"user"`
 }
 
-type registerUserResponseUser struct {
+type registerUserRequestUser struct {
 	Username string `json:"username" faker:"username"`
 	Email    string `json:"email" faker:"email"`
 	Password string `json:"password" faker:"password"`
+}
+
+func NewRegisterUserRequest(username string, email string, password string) RegisterUserRequest {
+	return RegisterUserRequest{
+		User: registerUserRequestUser{
+			Username: username,
+			Email:    email,
+			Password: password,
+		},
+	}
+}
+
+type LoginRequest struct {
+	User loginRequestUser `json:"user"`
+}
+
+type loginRequestUser struct {
+	Email    string `json:"email" faker:"email"`
+	Password string `json:"password" faker:"password"`
+}
+
+func NewLoginRequest(email string, password string) LoginRequest {
+	return LoginRequest{
+		User: loginRequestUser{
+			Email:    email,
+			Password: password,
+		},
+	}
 }
 
 type UserResponse struct {
@@ -39,13 +67,7 @@ type ErrorResponseErrors struct {
 func RegisterUser(username string, email string, password string) (*http.Response, error) {
 	const url = "http://localhost:8080/users"
 
-	requestData := &RegisterUserRequest{
-		User: registerUserResponseUser{
-			Username: username,
-			Email:    email,
-			Password: password,
-		},
-	}
+	requestData := NewRegisterUserRequest(username, email, password)
 
 	requestBody, err := json.Marshal(requestData)
 	if err != nil {
@@ -67,11 +89,11 @@ func RegisterUserAndDecode(username string, email string, password string) (*Use
 		return nil, err
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusCreated {
 		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusCreated))
 	}
+
+	defer response.Body.Close()
 
 	responseData := &UserResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)
@@ -85,12 +107,7 @@ func RegisterUserAndDecode(username string, email string, password string) (*Use
 func Login(email string, password string) (*http.Response, error) {
 	const url = "http://localhost:8080/users/login"
 
-	requestData := &RegisterUserRequest{
-		User: registerUserResponseUser{
-			Email:    email,
-			Password: password,
-		},
-	}
+	requestData := NewLoginRequest(email, password)
 
 	requestBody, err := json.Marshal(requestData)
 	if err != nil {
@@ -112,11 +129,11 @@ func LoginAndDecode(email string, password string) (*UserResponse, error) {
 		return nil, err
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusOK {
 		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusCreated))
 	}
+
+	defer response.Body.Close()
 
 	responseData := &UserResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)

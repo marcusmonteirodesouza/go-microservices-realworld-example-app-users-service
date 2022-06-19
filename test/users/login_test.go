@@ -1,7 +1,6 @@
 package users
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -57,7 +56,7 @@ func TestGivenValidRequestWhenLoginShouldReturnUser(t *testing.T) {
 		t.Fatal("Environment variable 'JWT_SECONDS_TO_EXPIRE' must be set and not be empty")
 	}
 
-	parsedToken, err := jwt.ParseWithClaims(loggedUser.User.Token, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.ParseWithClaims(loggedUser.User.Token, jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		b := ([]byte(jwtSecretKey))
 		return b, nil
 	})
@@ -110,16 +109,20 @@ func TestGivenEmailNotFoundShouldReturnUnauthorized(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnauthorized)
 	}
 
-	responseData := &ErrorResponse{}
-	err = json.NewDecoder(response.Body).Decode(&responseData)
-	if err != io.EOF {
+	defer response.Body.Close()
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	if err != nil {
 		t.Fatal(err)
+	}
+
+	bodyString := string(bodyBytes)
+	if bodyString != "Unauthorized" {
+		t.Fatalf("got %s, want %s", bodyString, "Unauthorized")
 	}
 }
 
@@ -147,15 +150,19 @@ func TestGivenPasswordIsIncorrectShouldReturnUnauthorized(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnauthorized)
 	}
 
-	responseData := &ErrorResponse{}
-	err = json.NewDecoder(response.Body).Decode(&responseData)
-	if err != io.EOF {
+	defer response.Body.Close()
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	if err != nil {
 		t.Fatal(err)
+	}
+
+	bodyString := string(bodyBytes)
+	if bodyString != "Unauthorized" {
+		t.Fatalf("got %s, want %s", bodyString, "Unauthorized")
 	}
 }
