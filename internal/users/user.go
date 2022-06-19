@@ -7,3 +7,13 @@ type User struct {
 	Bio          *string
 	Image        *string
 }
+
+func NewUser(username, email string, passwordHash string, bio *string, image *string) User {
+	return User{
+		Username:     username,
+		Email:        email,
+		PasswordHash: passwordHash,
+		Bio:          bio,
+		Image:        image,
+	}
+}

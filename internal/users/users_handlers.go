@@ -1,17 +1,24 @@
 package users
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
+	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/auth"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/errors"
 	"github.com/rs/zerolog/log"
 )
 
 type UsersHandlers struct {
-	UsersService *UsersService
-	JwtService   *JwtService
+	UsersService UsersService
+	JwtService   auth.JwtService
+}
+
+func NewUsersHandlers(usersService UsersService, jwtService auth.JwtService) UsersHandlers {
+	return UsersHandlers{
+		UsersService: usersService,
+		JwtService:   jwtService,
+	}
 }
 
 type userResponse struct {
@@ -24,6 +31,39 @@ type userResponseUser struct {
 	Username string  `json:"username"`
 	Bio      *string `json:"bio"`
 	Image    *string `json:"image"`
+}
+
+func newUserResponse(email string, token string, username string, bio *string, image *string) userResponse {
+	return userResponse{
+		User: &userResponseUser{
+			Email:    email,
+			Token:    token,
+			Username: username,
+			Bio:      bio,
+			Image:    image,
+		},
+	}
+}
+
+type errorResponse struct {
+	Errors errorResponseErrors `json:"errors"`
+}
+
+type errorResponseErrors struct {
+	Body []string `json:"body"`
+}
+
+func newErrorResponse(errors []error) errorResponse {
+	var body []string
+	for _, err := range errors {
+		body = append(body, err.Error())
+	}
+
+	return errorResponse{
+		Errors: errorResponseErrors{
+			Body: body,
+		},
+	}
 }
 
 func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
@@ -46,9 +86,7 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
-
-	user, err := h.UsersService.RegisterUser(ctx, request.User.Username, request.User.Email, request.User.Password)
+	user, err := h.UsersService.RegisterUser(r.Context(), request.User.Username, request.User.Email, request.User.Password)
 	if err != nil {
 		if _, ok := err.(*errors.InvalidArgumentError); ok {
 			unprocessableEntity(w, r, []error{err})
@@ -64,21 +102,13 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.JwtService.GenerateJwtToken(*user)
+	token, err := h.JwtService.GenerateToken(user.Username)
 	if err != nil {
 		internalServerError(w, r, err)
 		return
 	}
 
-	responseBody := userResponse{
-		User: &userResponseUser{
-			Email:    user.Email,
-			Token:    *token,
-			Username: user.Username,
-			Bio:      user.Bio,
-			Image:    user.Image,
-		},
-	}
+	responseBody := newUserResponse(user.Email, *token, user.Username, user.Bio, user.Image)
 
 	response, err := json.Marshal(responseBody)
 	if err != nil {
@@ -110,35 +140,25 @@ func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
-
-	isValidPassword, err := h.UsersService.IsValidPassword(ctx, request.User.Email, request.User.Password)
+	isValidPassword, err := h.UsersService.IsValidPassword(r.Context(), request.User.Email, request.User.Password)
 	if err != nil || !isValidPassword {
 		unauthorized(w, r)
 		return
 	}
 
-	user, err := h.UsersService.GetUserByEmail(ctx, request.User.Email)
+	user, err := h.UsersService.GetUserByEmail(r.Context(), request.User.Email)
 	if err != nil {
 		internalServerError(w, r, err)
 		return
 	}
 
-	token, err := h.JwtService.GenerateJwtToken(*user)
+	token, err := h.JwtService.GenerateToken(user.Username)
 	if err != nil {
 		internalServerError(w, r, err)
 		return
 	}
 
-	responseBody := userResponse{
-		User: &userResponseUser{
-			Email:    user.Email,
-			Token:    *token,
-			Username: user.Username,
-			Bio:      user.Bio,
-			Image:    user.Image,
-		},
-	}
+	responseBody := newUserResponse(user.Email, *token, user.Username, user.Bio, user.Image)
 
 	response, err := json.Marshal(responseBody)
 	if err != nil {
@@ -150,33 +170,64 @@ func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-type errorResponse struct {
-	Errors *errorResponseErrors `json:"errors"`
-}
-
-type errorResponseErrors struct {
-	Body []string `json:"body"`
-}
-
-func toErrorResponse(errors []error) errorResponse {
-	var body []string
-	for _, err := range errors {
-		body = append(body, err.Error())
+func (h *UsersHandlers) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		methodNotAllowed(w, r)
+		return
 	}
 
-	return errorResponse{
-		Errors: &errorResponseErrors{
-			Body: body,
-		},
+	username := r.Context().Value(auth.UsernameContextKey).(string)
+
+	user, err := h.UsersService.GetUserByUsername(r.Context(), username)
+	if err != nil {
+		if _, ok := err.(*errors.NotFoundError); ok {
+			notFound(w, r, []error{err})
+			return
+		}
+
+		internalServerError(w, r, err)
+		return
 	}
+
+	token, err := h.JwtService.GenerateToken(user.Username)
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+
+	responseBody := newUserResponse(user.Email, *token, user.Username, user.Bio, user.Image)
+
+	response, err := json.Marshal(responseBody)
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(response)
+}
+
+func unauthorized(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+}
+
+func notFound(w http.ResponseWriter, r *http.Request, errors []error) {
+	response, err := json.Marshal(newErrorResponse(errors))
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(http.StatusNotFound)
+	w.Write(response)
 }
 
 func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusMethodNotAllowed)
+	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
 
 func unprocessableEntity(w http.ResponseWriter, r *http.Request, errors []error) {
-	response, err := json.Marshal(toErrorResponse(errors))
+	response, err := json.Marshal(newErrorResponse(errors))
 	if err != nil {
 		internalServerError(w, r, err)
 		return
@@ -186,11 +237,7 @@ func unprocessableEntity(w http.ResponseWriter, r *http.Request, errors []error)
 	w.Write(response)
 }
 
-func unauthorized(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusUnauthorized)
-}
-
 func internalServerError(w http.ResponseWriter, r *http.Request, err error) {
 	log.Error().Err(err).Msg("")
-	w.WriteHeader(http.StatusInternalServerError)
+	http.Error(w, "Internal Server Error", http.StatusUnauthorized)
 }

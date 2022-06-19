@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/auth"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/firestore"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/users"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/validator"
@@ -27,18 +28,6 @@ func main() {
 
 	ctx := context.Background()
 
-	firestoreClient, err := firestore.InitFirestore(ctx, firestoreProjectId)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error initializing the Firestore client")
-	}
-
-	defer firestoreClient.Close()
-
-	usersService := &users.UsersService{
-		Validate:  validator.InitValidator(),
-		Firestore: firestoreClient,
-	}
-
 	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
 	if len(jwtSecretKey) == 0 {
 		log.Fatal().Err(err).Msg("Environment variable 'JWT_SECRET_KEY' must be set and not be empty")
@@ -49,19 +38,25 @@ func main() {
 		log.Fatal().Err(err).Msg("Environment variable 'JWT_SECONDS_TO_EXPIRE' must be set and not be empty")
 	}
 
-	jwtService := &users.JwtService{
-		SecretKey:       jwtSecretKey,
-		SecondsToExpire: jwtSecondsToExpire,
+	jwtService := auth.NewJwtService(jwtSecretKey, jwtSecondsToExpire)
+
+	firestoreClient, err := firestore.InitFirestore(ctx, firestoreProjectId)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error initializing the Firestore client")
 	}
 
-	usersHandlers := &users.UsersHandlers{
-		UsersService: usersService,
-		JwtService:   jwtService,
-	}
+	defer firestoreClient.Close()
+
+	usersService := users.NewUsersService(*validator.InitValidator(), *firestoreClient)
+
+	usersHandlers := users.NewUsersHandlers(usersService, jwtService)
+
+	authMiddleware := auth.NewAuthMiddleware(jwtService)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users", usersHandlers.RegisterUser)
 	mux.HandleFunc("/users/login", usersHandlers.Login)
+	mux.HandleFunc("/user", authMiddleware.Authenticate(usersHandlers.GetCurrentUser))
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),

@@ -26,11 +26,11 @@ func TestGivenValidRequestWhenRegisterUserShouldReturnUser(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusCreated {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusCreated)
 	}
+
+	defer response.Body.Close()
 
 	responseData := &UserResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)
@@ -98,11 +98,11 @@ func TestGivenNoUsernameShouldReturnUnprocessableEntity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
 	}
+
+	defer response.Body.Close()
 
 	responseData := &ErrorResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)
@@ -128,11 +128,11 @@ func TestGivenInvalidEmailShouldReturnUnprocessableEntity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
 	}
+
+	defer response.Body.Close()
 
 	responseData := &ErrorResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)
@@ -158,11 +158,11 @@ func TestGivenPasswordContainsLessThanEightCharactersShouldReturnUnprocessableEn
 		t.Fatal(err)
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
 	}
+
+	defer response.Body.Close()
 
 	responseData := &ErrorResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)
@@ -195,11 +195,11 @@ func TestGivenUsernameAlreadyExistsShouldReturnUnprocessableEntity(t *testing.T)
 
 	response, err = RegisterUser(existingUserRequestData.User.Username, anotherUserRequestData.User.Email, anotherUserRequestData.User.Password)
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
 	}
+
+	defer response.Body.Close()
 
 	responseData := &ErrorResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)
@@ -232,11 +232,11 @@ func TestGivenEmailIsTakenShouldReturnUnprocessableEntity(t *testing.T) {
 
 	response, err = RegisterUser(anotherUserRequestData.User.Username, existingUserRequestData.User.Email, anotherUserRequestData.User.Password)
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnprocessableEntity)
 	}
+
+	defer response.Body.Close()
 
 	responseData := &ErrorResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)

@@ -1,11 +1,11 @@
 package users
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -110,16 +110,20 @@ func TestGivenEmailNotFoundShouldReturnUnauthorized(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnauthorized)
 	}
 
-	responseData := &ErrorResponse{}
-	err = json.NewDecoder(response.Body).Decode(&responseData)
-	if err != io.EOF {
+	defer response.Body.Close()
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	if err != nil {
 		t.Fatal(err)
+	}
+
+	bodyString := strings.TrimSpace(string(bodyBytes))
+	if bodyString != "Unauthorized" {
+		t.Fatalf("got %s, want %s", bodyString, "Unauthorized")
 	}
 }
 
@@ -147,15 +151,19 @@ func TestGivenPasswordIsIncorrectShouldReturnUnauthorized(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer response.Body.Close()
-
 	if response.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnauthorized)
 	}
 
-	responseData := &ErrorResponse{}
-	err = json.NewDecoder(response.Body).Decode(&responseData)
-	if err != io.EOF {
+	defer response.Body.Close()
+
+	bodyBytes, err := io.ReadAll(response.Body)
+	if err != nil {
 		t.Fatal(err)
+	}
+
+	bodyString := strings.TrimSpace(string(bodyBytes))
+	if bodyString != "Unauthorized" {
+		t.Fatalf("got %s, want %s", bodyString, "Unauthorized")
 	}
 }
