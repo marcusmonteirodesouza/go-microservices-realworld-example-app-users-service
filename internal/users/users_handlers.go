@@ -67,11 +67,6 @@ func newErrorResponse(errors []error) errorResponse {
 }
 
 func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		methodNotAllowed(w, r)
-		return
-	}
-
 	var request struct {
 		User struct {
 			Username string `json:"username"`
@@ -122,11 +117,6 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		methodNotAllowed(w, r)
-		return
-	}
-
 	var request struct {
 		User struct {
 			Email    string `json:"email"`
@@ -171,11 +161,6 @@ func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UsersHandlers) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		methodNotAllowed(w, r)
-		return
-	}
-
 	username := r.Context().Value(auth.UsernameContextKey).(string)
 
 	user, err := h.UsersService.GetUserByUsername(r.Context(), username)
@@ -220,10 +205,6 @@ func notFound(w http.ResponseWriter, r *http.Request, errors []error) {
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
 	w.Write(response)
-}
-
-func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
 
 func unprocessableEntity(w http.ResponseWriter, r *http.Request, errors []error) {
