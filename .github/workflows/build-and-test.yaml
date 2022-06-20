@@ -1,0 +1,15 @@
+name: 'Build and test'
+
+on: 
+  push:
+    - main
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v3
+    - name: Test
+      run: ./test
