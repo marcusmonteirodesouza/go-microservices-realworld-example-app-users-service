@@ -46,6 +46,18 @@ func NewLoginRequest(email string, password string) LoginRequest {
 	}
 }
 
+type UpdateUserRequest struct {
+	User updateUserRequestUser `json:"user"`
+}
+
+type updateUserRequestUser struct {
+	Username *string `json:"username" faker:"username"`
+	Email    *string `json:"email" faker:"email"`
+	Password *string `json:"password" faker:"password"`
+	Bio      *string `json:"bio" faker:"paragraph"`
+	Image    *string `json:"image" faker:"url"`
+}
+
 type UserResponse struct {
 	User struct {
 		Username string `json:"username"`
@@ -165,6 +177,47 @@ func GetUser(tokenString string) (*http.Response, error) {
 
 func GetUserAndDecode(tokenString string) (*UserResponse, error) {
 	response, err := GetUser(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusOK))
+	}
+
+	defer response.Body.Close()
+
+	responseData := &UserResponse{}
+	err = json.NewDecoder(response.Body).Decode(&responseData)
+	if err != nil {
+		return nil, err
+	}
+
+	return responseData, nil
+}
+
+func UpdateUser(tokenString string, request UpdateUserRequest) (*http.Response, error) {
+	client := &http.Client{}
+	const url = "http://localhost:8080/user"
+
+	requestBytes, err := json.Marshal(request)
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(requestBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", tokenString))
+
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func UpdateUserAndDecode(tokenString string, request UpdateUserRequest) (*UserResponse, error) {
+	response, err := UpdateUser(tokenString, request)
 	if err != nil {
 		return nil, err
 	}

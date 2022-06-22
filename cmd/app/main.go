@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/auth"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/firestore"
@@ -53,14 +54,15 @@ func main() {
 
 	authMiddleware := auth.NewAuthMiddleware(jwtService)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/users", usersHandlers.RegisterUser)
-	mux.HandleFunc("/users/login", usersHandlers.Login)
-	mux.HandleFunc("/user", authMiddleware.Authenticate(usersHandlers.GetCurrentUser))
+	router := chi.NewRouter()
+	router.Post("/users", usersHandlers.RegisterUser)
+	router.Post("/users/login", usersHandlers.Login)
+	router.Get("/user", authMiddleware.Authenticate(usersHandlers.GetCurrentUser))
+	router.Put("/user", authMiddleware.Authenticate(usersHandlers.UpdateUser))
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+		Handler: router,
 	}
 
 	log.Info().Msgf("Starting server on %s", server.Addr)

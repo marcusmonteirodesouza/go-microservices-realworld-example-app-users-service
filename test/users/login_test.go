@@ -14,7 +14,7 @@ import (
 )
 
 func TestGivenValidRequestWhenLoginShouldReturnUser(t *testing.T) {
-	requestData := &RegisterUserRequest{}
+	requestData := RegisterUserRequest{}
 
 	err := faker.FakeData(&requestData)
 	if err != nil {
@@ -81,13 +81,13 @@ func TestGivenValidRequestWhenLoginShouldReturnUser(t *testing.T) {
 		t.Fatalf("IssuedAt claim must be close to now. got %d, now %d", claims.IssuedAt, now)
 	}
 
-	if claims.IssuedAt+int64(jwtSecondsToExpire) != claims.ExpiresAt {
+	if claims.ExpiresAt != claims.IssuedAt+int64(jwtSecondsToExpire) {
 		t.Fatalf("got %d, want %d", claims.ExpiresAt, claims.IssuedAt+int64(jwtSecondsToExpire))
 	}
 }
 
-func TestGivenEmailNotFoundShouldReturnUnauthorized(t *testing.T) {
-	requestData := &RegisterUserRequest{}
+func TestGivenEmailNotFoundWhenLoginShouldReturnUnauthorized(t *testing.T) {
+	requestData := RegisterUserRequest{}
 
 	err := faker.FakeData(&requestData)
 	if err != nil {
@@ -127,8 +127,8 @@ func TestGivenEmailNotFoundShouldReturnUnauthorized(t *testing.T) {
 	}
 }
 
-func TestGivenPasswordIsIncorrectShouldReturnUnauthorized(t *testing.T) {
-	requestData := &RegisterUserRequest{}
+func TestGivenPasswordIsIncorrectWhenLoginShouldReturnUnauthorized(t *testing.T) {
+	requestData := RegisterUserRequest{}
 
 	err := faker.FakeData(&requestData)
 	if err != nil {
@@ -140,7 +140,7 @@ func TestGivenPasswordIsIncorrectShouldReturnUnauthorized(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	anotherUserRequestData := &RegisterUserRequest{}
+	anotherUserRequestData := RegisterUserRequest{}
 	err = faker.FakeData(&anotherUserRequestData)
 	if err != nil {
 		t.Fatal(err)

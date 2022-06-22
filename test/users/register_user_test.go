@@ -14,7 +14,7 @@ import (
 )
 
 func TestGivenValidRequestWhenRegisterUserShouldReturnUser(t *testing.T) {
-	requestData := &RegisterUserRequest{}
+	requestData := RegisterUserRequest{}
 
 	err := faker.FakeData(&requestData)
 	if err != nil {
@@ -85,8 +85,8 @@ func TestGivenValidRequestWhenRegisterUserShouldReturnUser(t *testing.T) {
 	}
 }
 
-func TestGivenNoUsernameShouldReturnUnprocessableEntity(t *testing.T) {
-	requestData := &RegisterUserRequest{}
+func TestGivenNoUsernameWhenRegisterUserShouldReturnUnprocessableEntity(t *testing.T) {
+	requestData := RegisterUserRequest{}
 	err := faker.FakeData(&requestData)
 	if err != nil {
 		t.Fatal(err)
@@ -115,8 +115,8 @@ func TestGivenNoUsernameShouldReturnUnprocessableEntity(t *testing.T) {
 	}
 }
 
-func TestGivenInvalidEmailShouldReturnUnprocessableEntity(t *testing.T) {
-	requestData := &RegisterUserRequest{}
+func TestGivenInvalidEmailWhenRegisterUserShouldReturnUnprocessableEntity(t *testing.T) {
+	requestData := RegisterUserRequest{}
 	err := faker.FakeData(&requestData)
 	if err != nil {
 		t.Fatal(err)
@@ -145,8 +145,8 @@ func TestGivenInvalidEmailShouldReturnUnprocessableEntity(t *testing.T) {
 	}
 }
 
-func TestGivenPasswordContainsLessThanEightCharactersShouldReturnUnprocessableEntity(t *testing.T) {
-	requestData := &RegisterUserRequest{}
+func TestGivenPasswordLengthLessThanEightCharactersWhenRegisterUserShouldReturnUnprocessableEntity(t *testing.T) {
+	requestData := RegisterUserRequest{}
 	err := faker.FakeData(&requestData)
 	if err != nil {
 		t.Fatal(err)
@@ -175,8 +175,8 @@ func TestGivenPasswordContainsLessThanEightCharactersShouldReturnUnprocessableEn
 	}
 }
 
-func TestGivenUsernameAlreadyExistsShouldReturnUnprocessableEntity(t *testing.T) {
-	existingUserRequestData := &RegisterUserRequest{}
+func TestGivenUsernameAlreadyExistsWhenRegisterUserShouldReturnUnprocessableEntity(t *testing.T) {
+	existingUserRequestData := RegisterUserRequest{}
 	err := faker.FakeData(&existingUserRequestData)
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +187,7 @@ func TestGivenUsernameAlreadyExistsShouldReturnUnprocessableEntity(t *testing.T)
 		t.Fatal(err)
 	}
 
-	anotherUserRequestData := &RegisterUserRequest{}
+	anotherUserRequestData := RegisterUserRequest{}
 	err = faker.FakeData(&anotherUserRequestData)
 	if err != nil {
 		t.Fatal(err)
@@ -212,8 +212,8 @@ func TestGivenUsernameAlreadyExistsShouldReturnUnprocessableEntity(t *testing.T)
 	}
 }
 
-func TestGivenEmailIsTakenShouldReturnUnprocessableEntity(t *testing.T) {
-	existingUserRequestData := &RegisterUserRequest{}
+func TestGivenEmailIsTakenWhenRegisterUserShouldReturnUnprocessableEntity(t *testing.T) {
+	existingUserRequestData := RegisterUserRequest{}
 	err := faker.FakeData(&existingUserRequestData)
 	if err != nil {
 		t.Fatal(err)
@@ -224,7 +224,7 @@ func TestGivenEmailIsTakenShouldReturnUnprocessableEntity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	anotherUserRequestData := &RegisterUserRequest{}
+	anotherUserRequestData := RegisterUserRequest{}
 	err = faker.FakeData(&anotherUserRequestData)
 	if err != nil {
 		t.Fatal(err)

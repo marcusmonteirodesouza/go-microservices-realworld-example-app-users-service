@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/auth"
-	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/errors"
+	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/custom_errors"
 	"github.com/rs/zerolog/log"
 )
 
@@ -67,11 +67,6 @@ func newErrorResponse(errors []error) errorResponse {
 }
 
 func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		methodNotAllowed(w, r)
-		return
-	}
-
 	var request struct {
 		User struct {
 			Username string `json:"username"`
@@ -88,12 +83,12 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.UsersService.RegisterUser(r.Context(), request.User.Username, request.User.Email, request.User.Password)
 	if err != nil {
-		if _, ok := err.(*errors.InvalidArgumentError); ok {
+		if _, ok := err.(*custom_errors.InvalidArgumentError); ok {
 			unprocessableEntity(w, r, []error{err})
 			return
 		}
 
-		if _, ok := err.(*errors.AlreadyExistsError); ok {
+		if _, ok := err.(*custom_errors.AlreadyExistsError); ok {
 			unprocessableEntity(w, r, []error{err})
 			return
 		}
@@ -122,11 +117,6 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		methodNotAllowed(w, r)
-		return
-	}
-
 	var request struct {
 		User struct {
 			Email    string `json:"email"`
@@ -140,8 +130,8 @@ func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isValidPassword, err := h.UsersService.IsValidPassword(r.Context(), request.User.Email, request.User.Password)
-	if err != nil || !isValidPassword {
+	IsCorrectPassword, err := h.UsersService.IsCorrectPassword(r.Context(), request.User.Email, request.User.Password)
+	if err != nil || !IsCorrectPassword {
 		unauthorized(w, r)
 		return
 	}
@@ -171,17 +161,84 @@ func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UsersHandlers) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		methodNotAllowed(w, r)
-		return
-	}
-
 	username := r.Context().Value(auth.UsernameContextKey).(string)
 
 	user, err := h.UsersService.GetUserByUsername(r.Context(), username)
 	if err != nil {
-		if _, ok := err.(*errors.NotFoundError); ok {
+		if _, ok := err.(*custom_errors.NotFoundError); ok {
 			notFound(w, r, []error{err})
+			return
+		}
+
+		internalServerError(w, r, err)
+		return
+	}
+
+	token, err := h.JwtService.GenerateToken(user.Username)
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+
+	responseBody := newUserResponse(user.Email, *token, user.Username, user.Bio, user.Image)
+
+	response, err := json.Marshal(responseBody)
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(response)
+}
+
+func (h *UsersHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	username := r.Context().Value(auth.UsernameContextKey).(string)
+
+	user, err := h.UsersService.GetUserByUsername(r.Context(), username)
+	if err != nil {
+		if _, ok := err.(*custom_errors.NotFoundError); ok {
+			notFound(w, r, []error{err})
+			return
+		}
+
+		internalServerError(w, r, err)
+		return
+	}
+
+	var request struct {
+		User struct {
+			Email    *string `json:"email"`
+			Username *string `json:"username"`
+			Password *string `json:"password"`
+			Image    *string `json:"image"`
+			Bio      *string `json:"bio"`
+		} `json:"user"`
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		unprocessableEntity(w, r, []error{err})
+		return
+	}
+
+	userUpdate := UserUpdate{
+		Username: request.User.Username,
+		Email:    request.User.Email,
+		Password: request.User.Password,
+		Bio:      request.User.Bio,
+		Image:    request.User.Image,
+	}
+
+	user, err = h.UsersService.UpdateUserByUsername(r.Context(), username, userUpdate)
+	if err != nil {
+		if _, ok := err.(*custom_errors.InvalidArgumentError); ok {
+			unprocessableEntity(w, r, []error{err})
+			return
+		}
+
+		if _, ok := err.(*custom_errors.AlreadyExistsError); ok {
+			unprocessableEntity(w, r, []error{err})
 			return
 		}
 
@@ -222,10 +279,6 @@ func notFound(w http.ResponseWriter, r *http.Request, errors []error) {
 	w.Write(response)
 }
 
-func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-}
-
 func unprocessableEntity(w http.ResponseWriter, r *http.Request, errors []error) {
 	response, err := json.Marshal(newErrorResponse(errors))
 	if err != nil {
@@ -239,5 +292,5 @@ func unprocessableEntity(w http.ResponseWriter, r *http.Request, errors []error)
 
 func internalServerError(w http.ResponseWriter, r *http.Request, err error) {
 	log.Error().Err(err).Msg("")
-	http.Error(w, "Internal Server Error", http.StatusUnauthorized)
+	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 }
