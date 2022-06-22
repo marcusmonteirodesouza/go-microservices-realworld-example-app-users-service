@@ -8,8 +8,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestGivenUserExistsWhenValidRequestShouldReturnUser(t *testing.T) {
-	requestData := &RegisterUserRequest{}
+func TestGivenUserExistsWhenGetCurrentUserShouldReturnUser(t *testing.T) {
+	requestData := RegisterUserRequest{}
 
 	err := faker.FakeData(&requestData)
 	if err != nil {
@@ -28,23 +28,23 @@ func TestGivenUserExistsWhenValidRequestShouldReturnUser(t *testing.T) {
 	}
 }
 
-func TestGivenUserDoesNotExistsShouldReturnUnauthorized(t *testing.T) {
-	const nonExistentUserToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTU3NTM2NjQsImlhdCI6MTY1NTY2NzI2NCwic3ViIjoiMTc5ZGM1NzktMjFjZS00Mjg0LTg4YzItMjcyMjI3MzAyZjY0In0.3y6b232RRGvZYxgIoYwFb6l53KruHJhI392IbTRbA84"
+func TestGivenUserDoesNotExistsWhenGetCurrentUserShouldReturnNotFound(t *testing.T) {
+	const nonExistentUserToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjQ4MTE2Mjg2MjcsImlhdCI6MTY1NTg2ODYyNywic3ViIjoibmVpbHBlYXJ0In0.0aDiR6d8jJsn9Ii9T176GhF34CqVT-KgTrU77BBjIgM"
 
 	response, err := GetUser(nonExistentUserToken)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if response.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusUnauthorized)
+	if response.StatusCode != http.StatusNotFound {
+		t.Fatalf("got %d, want %d", response.StatusCode, http.StatusNotFound)
 	}
 }
 
-func TestGivenTokenIsInvalidShouldReturnUnauthorized(t *testing.T) {
-	const nonExistentUserToken = " "
+func TestGivenTokenIsInvalidWhenGetCurrentUserShouldReturnUnauthorized(t *testing.T) {
+	const invalidToken = " "
 
-	response, err := GetUser(nonExistentUserToken)
+	response, err := GetUser(invalidToken)
 	if err != nil {
 		t.Fatal(err)
 	}

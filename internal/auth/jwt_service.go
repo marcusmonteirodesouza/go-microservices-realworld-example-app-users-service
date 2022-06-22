@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -43,10 +41,6 @@ func (s *JwtService) GetClaims(tokenString string) (*jwt.StandardClaims, error) 
 	})
 
 	if claims, ok := parsedToken.Claims.(*jwt.StandardClaims); ok && parsedToken.Valid {
-		now := time.Now().Unix()
-		if claims.ExpiresAt < now {
-			return nil, errors.New(fmt.Sprintf("Token issued at %d expired at %d", claims.ExpiresAt, now))
-		}
 		return claims, nil
 	} else {
 		return nil, err

@@ -58,6 +58,7 @@ func main() {
 	router.Post("/users", usersHandlers.RegisterUser)
 	router.Post("/users/login", usersHandlers.Login)
 	router.Get("/user", authMiddleware.Authenticate(usersHandlers.GetCurrentUser))
+	router.Put("/user", authMiddleware.Authenticate(usersHandlers.UpdateUser))
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
