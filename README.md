@@ -22,14 +22,8 @@ For more information on how to this works with other frontends/backends, head ov
 ## Running locally
 
 1. Install [Docker](https://docs.docker.com/get-docker/).
-1. Run `docker compose up -d`.
+1. Run `docker compose up`.
 
 ## Testing
 
-1. Run `./test.sh`
-
-# Deployment
-
-## Deploy to [Google Cloud Platform](https://cloud.google.com/) (GCP)
-
-1.
+1. Run `./test.sh`.
