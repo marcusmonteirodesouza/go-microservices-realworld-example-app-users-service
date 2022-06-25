@@ -25,3 +25,11 @@ For more information on how to this works with other frontends/backends, head ov
 1. Run `docker compose up -d`.
 
 ## Testing
+
+1. Run `./test.sh`
+
+# Deployment
+
+## Deploy to [Google Cloud Platform](https://cloud.google.com/) (GCP)
+
+1.
