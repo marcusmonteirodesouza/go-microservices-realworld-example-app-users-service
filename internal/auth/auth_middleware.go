@@ -26,9 +26,12 @@ func (h AuthMiddleware) Authenticate(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const bearerScheme string = "Bearer "
 
-		auth := r.Header.Get("authorization")
+		auth := r.Header.Get("X-Forwarded-Authorization")
 		if len(auth) == 0 {
 			auth = r.Header.Get("Authorization")
+		}
+		if len(auth) == 0 {
+			auth = r.Header.Get("authorization")
 		}
 		if !strings.HasPrefix(auth, bearerScheme) {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
