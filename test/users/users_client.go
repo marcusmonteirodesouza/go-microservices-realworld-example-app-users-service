@@ -68,6 +68,15 @@ type UserResponse struct {
 	} `json:"user"`
 }
 
+type GetUserResponse struct {
+	User struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Bio      string `json:"bio"`
+		Image    string `json:"image"`
+	} `json:"user"`
+}
+
 type ErrorResponse struct {
 	Errors *ErrorResponseErrors `json:"errors"`
 }
@@ -156,7 +165,7 @@ func LoginAndDecode(email string, password string) (*UserResponse, error) {
 	return responseData, nil
 }
 
-func GetUser(tokenString string) (*http.Response, error) {
+func GetCurrentUser(tokenString string) (*http.Response, error) {
 	client := &http.Client{}
 	const url = "http://localhost:8080/user"
 
@@ -175,8 +184,8 @@ func GetUser(tokenString string) (*http.Response, error) {
 	return response, nil
 }
 
-func GetUserAndDecode(tokenString string) (*UserResponse, error) {
-	response, err := GetUser(tokenString)
+func GetCurrentUserAndDecode(tokenString string) (*UserResponse, error) {
+	response, err := GetCurrentUser(tokenString)
 	if err != nil {
 		return nil, err
 	}
@@ -188,6 +197,39 @@ func GetUserAndDecode(tokenString string) (*UserResponse, error) {
 	defer response.Body.Close()
 
 	responseData := &UserResponse{}
+	err = json.NewDecoder(response.Body).Decode(&responseData)
+	if err != nil {
+		return nil, err
+	}
+
+	return responseData, nil
+}
+
+func GetUserByUsername(username string) (*http.Response, error) {
+	url := fmt.Sprintf("http://localhost:8080/users/%s", username)
+
+	response, err := http.Get(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func GetUserByUsernameAndDecode(username string) (*GetUserResponse, error) {
+	response, err := GetUserByUsername(username)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusOK))
+	}
+
+	defer response.Body.Close()
+
+	responseData := &GetUserResponse{}
 	err = json.NewDecoder(response.Body).Decode(&responseData)
 	if err != nil {
 		return nil, err

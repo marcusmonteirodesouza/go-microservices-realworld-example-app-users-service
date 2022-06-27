@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/auth"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/custom_errors"
 	"github.com/rs/zerolog/log"
@@ -22,7 +23,7 @@ func NewUsersHandlers(usersService UsersService, jwtService auth.JwtService) Use
 }
 
 type userResponse struct {
-	User *userResponseUser `json:"user"`
+	User userResponseUser `json:"user"`
 }
 
 type userResponseUser struct {
@@ -35,9 +36,31 @@ type userResponseUser struct {
 
 func newUserResponse(email string, token string, username string, bio *string, image *string) userResponse {
 	return userResponse{
-		User: &userResponseUser{
+		User: userResponseUser{
 			Email:    email,
 			Token:    token,
+			Username: username,
+			Bio:      bio,
+			Image:    image,
+		},
+	}
+}
+
+type getUserResponse struct {
+	User getUserResponseUser `json:"user"`
+}
+
+type getUserResponseUser struct {
+	Email    string  `json:"email"`
+	Username string  `json:"username"`
+	Bio      *string `json:"bio"`
+	Image    *string `json:"image"`
+}
+
+func newGetUserResponse(email string, username string, bio *string, image *string) getUserResponse {
+	return getUserResponse{
+		User: getUserResponseUser{
+			Email:    email,
 			Username: username,
 			Bio:      bio,
 			Image:    image,
@@ -181,6 +204,32 @@ func (h *UsersHandlers) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responseBody := newUserResponse(user.Email, *token, user.Username, user.Bio, user.Image)
+
+	response, err := json.Marshal(responseBody)
+	if err != nil {
+		internalServerError(w, r, err)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(response)
+}
+
+func (h *UsersHandlers) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
+	username := chi.URLParam(r, "username")
+
+	user, err := h.UsersService.GetUserByUsername(r.Context(), username)
+	if err != nil {
+		if _, ok := err.(*custom_errors.NotFoundError); ok {
+			notFound(w, r, []error{err})
+			return
+		}
+
+		internalServerError(w, r, err)
+		return
+	}
+
+	responseBody := newGetUserResponse(user.Email, user.Username, user.Bio, user.Image)
 
 	response, err := json.Marshal(responseBody)
 	if err != nil {

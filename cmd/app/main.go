@@ -57,6 +57,7 @@ func main() {
 	router := chi.NewRouter()
 	router.Post("/users", usersHandlers.RegisterUser)
 	router.Post("/users/login", usersHandlers.Login)
+	router.Get("/users/{username}", usersHandlers.GetUserByUsername)
 	router.Get("/user", authMiddleware.Authenticate(usersHandlers.GetCurrentUser))
 	router.Put("/user", authMiddleware.Authenticate(usersHandlers.UpdateUser))
 
