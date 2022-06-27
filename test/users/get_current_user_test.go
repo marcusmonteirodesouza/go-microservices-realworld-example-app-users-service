@@ -18,7 +18,7 @@ func TestGivenUserExistsWhenGetCurrentUserShouldReturnUser(t *testing.T) {
 
 	registeredUser, err := RegisterUserAndDecode(requestData.User.Username, requestData.User.Email, requestData.User.Password)
 
-	user, err := GetUserAndDecode(registeredUser.User.Token)
+	user, err := GetCurrentUserAndDecode(registeredUser.User.Token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestGivenUserExistsWhenGetCurrentUserShouldReturnUser(t *testing.T) {
 func TestGivenUserDoesNotExistsWhenGetCurrentUserShouldReturnNotFound(t *testing.T) {
 	const nonExistentUserToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjQ4MTE2Mjg2MjcsImlhdCI6MTY1NTg2ODYyNywic3ViIjoibmVpbHBlYXJ0In0.0aDiR6d8jJsn9Ii9T176GhF34CqVT-KgTrU77BBjIgM"
 
-	response, err := GetUser(nonExistentUserToken)
+	response, err := GetCurrentUser(nonExistentUserToken)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestGivenUserDoesNotExistsWhenGetCurrentUserShouldReturnNotFound(t *testing
 func TestGivenTokenIsInvalidWhenGetCurrentUserShouldReturnUnauthorized(t *testing.T) {
 	const invalidToken = " "
 
-	response, err := GetUser(invalidToken)
+	response, err := GetCurrentUser(invalidToken)
 	if err != nil {
 		t.Fatal(err)
 	}
