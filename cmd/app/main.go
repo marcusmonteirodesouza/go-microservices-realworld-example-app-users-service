@@ -17,6 +17,8 @@ import (
 )
 
 func main() {
+	log.Logger = log.With().Caller().Logger()
+
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
 		log.Fatal().Err(err).Msg("Environment variable 'PORT' must be set and set to an integer")
