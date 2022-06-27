@@ -100,6 +100,7 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error decoding request")
 		unprocessableEntity(w, r, []error{err})
 		return
 	}
@@ -107,21 +108,25 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	user, err := h.UsersService.RegisterUser(r.Context(), request.User.Username, request.User.Email, request.User.Password)
 	if err != nil {
 		if _, ok := err.(*custom_errors.InvalidArgumentError); ok {
+			log.Error().Err(err).Msgf("Error registering username %s, email %s", request.User.Username, request.User.Email)
 			unprocessableEntity(w, r, []error{err})
 			return
 		}
 
 		if _, ok := err.(*custom_errors.AlreadyExistsError); ok {
+			log.Error().Err(err).Msgf("Error registering username %s, email %s", request.User.Username, request.User.Email)
 			unprocessableEntity(w, r, []error{err})
 			return
 		}
 
+		log.Error().Err(err).Msgf("Error registering username %s, email %s", request.User.Username, request.User.Email)
 		internalServerError(w, r, err)
 		return
 	}
 
 	token, err := h.JwtService.GenerateToken(user.Username)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error registering username %s, email %s", request.User.Username, request.User.Email)
 		internalServerError(w, r, err)
 		return
 	}
@@ -130,6 +135,7 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	response, err := json.Marshal(responseBody)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error registering username %s, email %s", request.User.Username, request.User.Email)
 		internalServerError(w, r, err)
 		return
 	}
@@ -149,24 +155,28 @@ func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error decoding request")
 		unprocessableEntity(w, r, []error{err})
 		return
 	}
 
 	IsCorrectPassword, err := h.UsersService.IsCorrectPassword(r.Context(), request.User.Email, request.User.Password)
 	if err != nil || !IsCorrectPassword {
+		log.Error().Err(err).Msgf("Error logging email %s", request.User.Email)
 		unauthorized(w, r)
 		return
 	}
 
 	user, err := h.UsersService.GetUserByEmail(r.Context(), request.User.Email)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error logging email %s", request.User.Email)
 		internalServerError(w, r, err)
 		return
 	}
 
 	token, err := h.JwtService.GenerateToken(user.Username)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error logging email %s", request.User.Email)
 		internalServerError(w, r, err)
 		return
 	}
@@ -175,6 +185,7 @@ func (h *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
 
 	response, err := json.Marshal(responseBody)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error logging email %s", request.User.Email)
 		internalServerError(w, r, err)
 		return
 	}
@@ -189,16 +200,19 @@ func (h *UsersHandlers) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	user, err := h.UsersService.GetUserByUsername(r.Context(), username)
 	if err != nil {
 		if _, ok := err.(*custom_errors.NotFoundError); ok {
+			log.Error().Err(err).Msgf("Error getting current username %s", username)
 			notFound(w, r, []error{err})
 			return
 		}
 
+		log.Error().Err(err).Msgf("Error getting current username %s", username)
 		internalServerError(w, r, err)
 		return
 	}
 
 	token, err := h.JwtService.GenerateToken(user.Username)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error getting current username %s", username)
 		internalServerError(w, r, err)
 		return
 	}
@@ -207,6 +221,7 @@ func (h *UsersHandlers) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 	response, err := json.Marshal(responseBody)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error getting current username %s", username)
 		internalServerError(w, r, err)
 		return
 	}
@@ -221,10 +236,12 @@ func (h *UsersHandlers) GetUserByUsername(w http.ResponseWriter, r *http.Request
 	user, err := h.UsersService.GetUserByUsername(r.Context(), username)
 	if err != nil {
 		if _, ok := err.(*custom_errors.NotFoundError); ok {
+			log.Error().Err(err).Msgf("Error getting username %s", username)
 			notFound(w, r, []error{err})
 			return
 		}
 
+		log.Error().Err(err).Msgf("Error getting username %s", username)
 		internalServerError(w, r, err)
 		return
 	}
@@ -233,6 +250,7 @@ func (h *UsersHandlers) GetUserByUsername(w http.ResponseWriter, r *http.Request
 
 	response, err := json.Marshal(responseBody)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error getting username %s", username)
 		internalServerError(w, r, err)
 		return
 	}
@@ -247,10 +265,12 @@ func (h *UsersHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := h.UsersService.GetUserByUsername(r.Context(), username)
 	if err != nil {
 		if _, ok := err.(*custom_errors.NotFoundError); ok {
+			log.Error().Err(err).Msgf("Error updating username %s", username)
 			notFound(w, r, []error{err})
 			return
 		}
 
+		log.Error().Err(err).Msgf("Error updating username %s", username)
 		internalServerError(w, r, err)
 		return
 	}
@@ -267,6 +287,7 @@ func (h *UsersHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error decoding request")
 		unprocessableEntity(w, r, []error{err})
 		return
 	}
@@ -282,21 +303,25 @@ func (h *UsersHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user, err = h.UsersService.UpdateUserByUsername(r.Context(), username, userUpdate)
 	if err != nil {
 		if _, ok := err.(*custom_errors.InvalidArgumentError); ok {
+			log.Error().Err(err).Msgf("Error updating username %s", username)
 			unprocessableEntity(w, r, []error{err})
 			return
 		}
 
 		if _, ok := err.(*custom_errors.AlreadyExistsError); ok {
+			log.Error().Err(err).Msgf("Error updating username %s", username)
 			unprocessableEntity(w, r, []error{err})
 			return
 		}
 
+		log.Error().Err(err).Msgf("Error updating username %s", username)
 		internalServerError(w, r, err)
 		return
 	}
 
 	token, err := h.JwtService.GenerateToken(user.Username)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error updating username %s", username)
 		internalServerError(w, r, err)
 		return
 	}
@@ -305,6 +330,7 @@ func (h *UsersHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	response, err := json.Marshal(responseBody)
 	if err != nil {
+		log.Error().Err(err).Msgf("Error updating username %s", username)
 		internalServerError(w, r, err)
 		return
 	}
@@ -340,6 +366,5 @@ func unprocessableEntity(w http.ResponseWriter, r *http.Request, errors []error)
 }
 
 func internalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	log.Error().Err(err).Msg("")
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 }
