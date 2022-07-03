@@ -1,0 +1,24 @@
+name: 'Deploy to GCP - DEV'
+
+on:
+  workflow_run:
+    workflows: [Build and test]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} 
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: google-github-actions/auth@v0
+        with:
+          workload_identity_provider: ${{ secrets.GCP_DEV_PROVIDER_NAME }}
+          service_account: ${{ secrets.GCP_DEV_SA_EMAIL }}
+      - name: Build and push to Artifact Registry
+        run: ./build-and-push-to-artifact-registry.sh "${{ secrets.GCP_DEV_PROJECT_ID }}" us-central1 "us-central1-docker.pkg.dev/${{ secrets.GCP_DEV_PROJECT_ID }}/users-service-repository/users-service"
+        working-directory: ./deploy/gcp/scripts
