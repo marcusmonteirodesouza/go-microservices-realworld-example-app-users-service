@@ -3,7 +3,6 @@ package users
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 )
@@ -111,7 +110,7 @@ func RegisterUserAndDecode(username string, email string, password string) (*Use
 	}
 
 	if response.StatusCode != http.StatusCreated {
-		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusCreated))
+		return nil, fmt.Errorf("got %d, want %d", response.StatusCode, http.StatusCreated)
 	}
 
 	defer response.Body.Close()
@@ -151,7 +150,7 @@ func LoginAndDecode(email string, password string) (*UserResponse, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusOK))
+		return nil, fmt.Errorf("got %d, want %d", response.StatusCode, http.StatusOK)
 	}
 
 	defer response.Body.Close()
@@ -191,7 +190,7 @@ func GetCurrentUserAndDecode(tokenString string) (*UserResponse, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusOK))
+		return nil, fmt.Errorf("got %d, want %d", response.StatusCode, http.StatusOK)
 	}
 
 	defer response.Body.Close()
@@ -224,7 +223,7 @@ func GetUserByUsernameAndDecode(username string) (*GetUserResponse, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusOK))
+		return nil, fmt.Errorf("got %d, want %d", response.StatusCode, http.StatusOK)
 	}
 
 	defer response.Body.Close()
@@ -265,7 +264,7 @@ func UpdateUserAndDecode(tokenString string, request UpdateUserRequest) (*UserRe
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("got %d, want %d", response.StatusCode, http.StatusOK))
+		return nil, fmt.Errorf("got %d, want %d", response.StatusCode, http.StatusOK)
 	}
 
 	defer response.Body.Close()
