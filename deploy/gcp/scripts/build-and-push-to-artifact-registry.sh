@@ -2,7 +2,9 @@
 
 PROJECT=$1
 REGION=$2
-IMAGE=$3
+REPOSITORY=$3
+
+IMAGE="$REPOSITORY/users-service"
 
 DOCKERFILE_PATH='../../..'
 
