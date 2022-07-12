@@ -105,7 +105,7 @@ func (h *UsersHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info().Msgf("Registering User %s, email: %s...", request.User.Username, request.User.Password)
+	log.Info().Msgf("Registering User %s, email: %s...", request.User.Username, request.User.Email)
 	user, err := h.UsersService.RegisterUser(r.Context(), request.User.Username, request.User.Email, request.User.Password)
 	if err != nil {
 		log.Error().Err(err).Msgf("Error registering User %s, email %s!", request.User.Username, request.User.Email)

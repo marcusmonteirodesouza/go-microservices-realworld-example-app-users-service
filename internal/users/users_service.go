@@ -9,7 +9,6 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/go-playground/validator/v10"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/custom_errors"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/api/iterator"
 )
@@ -89,7 +88,6 @@ func (s *UsersService) RegisterUser(ctx context.Context, username string, email 
 	userDocRef := s.Firestore.Collection(usersCollectionName).NewDoc()
 	userData := newUserDocData(username, email, *passwordHash, nil, nil)
 
-	log.Info().Msgf("HI!!! I'm creating a User!!!!!")
 	_, err = userDocRef.Create(ctx, userData)
 	if err != nil {
 		return nil, err
