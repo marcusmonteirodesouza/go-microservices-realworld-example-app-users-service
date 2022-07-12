@@ -9,7 +9,6 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/go-playground/validator/v10"
 	"github.com/marcusmonteirodesouza/go-microservices-realworld-example-app-users-service/internal/custom_errors"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/api/iterator"
 )
@@ -83,7 +82,6 @@ func (s *UsersService) RegisterUser(ctx context.Context, username string, email 
 
 	passwordHash, err := hashPassword(password)
 	if err != nil {
-		log.Error().Err(err).Msgf("Error registering username %s, email %s", username, email)
 		return nil, err
 	}
 
@@ -92,7 +90,6 @@ func (s *UsersService) RegisterUser(ctx context.Context, username string, email 
 
 	_, err = userDocRef.Create(ctx, userData)
 	if err != nil {
-		log.Error().Err(err).Msgf("Error registering username %s, email %s", username, email)
 		return nil, err
 	}
 
@@ -109,17 +106,14 @@ func (s *UsersService) GetUserByUsername(ctx context.Context, username string) (
 	for {
 		userDocSnapshot, err := userDocs.Next()
 		if err == iterator.Done {
-			log.Error().Err(err).Msgf("Error getting username %s in collection %s", username, usersCollectionName)
 			return nil, &custom_errors.NotFoundError{Message: "User not found"}
 		} else if err != nil {
-			log.Error().Err(err).Msgf("Error getting username %s in collection %s", username, usersCollectionName)
 			return nil, err
 		}
 
 		userData := userDocData{}
 		err = userDocSnapshot.DataTo(&userData)
 		if err != nil {
-			log.Error().Err(err).Msgf("Error getting username %s in collection %s", username, usersCollectionName)
 			return nil, err
 		}
 
@@ -137,10 +131,8 @@ func (s *UsersService) GetUserByEmail(ctx context.Context, email string) (*User,
 	for {
 		userDocSnapshot, err := userDocs.Next()
 		if err == iterator.Done {
-			log.Error().Err(err).Msgf("Error getting email %s in collection %s", email, usersCollectionName)
 			return nil, &custom_errors.NotFoundError{Message: "User not found"}
 		} else if err != nil {
-			log.Error().Err(err).Msgf("Error getting email %s in collection %s", email, usersCollectionName)
 			return nil, err
 		}
 
@@ -207,7 +199,6 @@ func (s *UsersService) UpdateUserByUsername(ctx context.Context, username string
 		}
 		passwordHash, err := hashPassword(*userUpdate.Password)
 		if err != nil {
-			log.Error().Err(err).Msgf("Error updating username %s", user.Username)
 			return nil, err
 		}
 		user.PasswordHash = *passwordHash
@@ -229,7 +220,6 @@ func (s *UsersService) UpdateUserByUsername(ctx context.Context, username string
 	userDocData := newUserDocData(user.Username, user.Email, user.PasswordHash, user.Bio, user.Image)
 	_, err = userDocRef.Set(ctx, userDocData)
 	if err != nil {
-		log.Error().Err(err).Msgf("Error updating username %s", user.Username)
 		return nil, err
 	}
 	return user, nil
@@ -238,7 +228,6 @@ func (s *UsersService) UpdateUserByUsername(ctx context.Context, username string
 func (s *UsersService) IsCorrectPassword(ctx context.Context, email string, password string) (bool, error) {
 	user, err := s.GetUserByEmail(ctx, email)
 	if err != nil {
-		log.Error().Err(err).Msgf("Error checking if password is correct for email %s", email)
 		return false, err
 	}
 
@@ -247,7 +236,6 @@ func (s *UsersService) IsCorrectPassword(ctx context.Context, email string, pass
 		if err == bcrypt.ErrMismatchedHashAndPassword {
 			return false, nil
 		}
-		log.Error().Err(err).Msgf("Error checking if password is correct for email %s", email)
 		return false, err
 	}
 
