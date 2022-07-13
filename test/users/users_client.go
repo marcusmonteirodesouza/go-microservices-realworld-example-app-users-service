@@ -173,7 +173,7 @@ func GetCurrentUser(tokenString string) (*http.Response, error) {
 		return nil, err
 	}
 
-	req.Header.Set("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", tokenString))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenString))
 
 	response, err := client.Do(req)
 	if err != nil {
@@ -247,7 +247,7 @@ func UpdateUser(tokenString string, request UpdateUserRequest) (*http.Response, 
 		return nil, err
 	}
 
-	req.Header.Set("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", tokenString))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenString))
 
 	response, err := client.Do(req)
 	if err != nil {
